@@ -3,9 +3,10 @@
 //
 
 #pragma once
-
+#pragma pack(push, 16)
 #include <Eigen/Dense>
 #include <vector>
+#pragma pack(pop)
 class CProject3View : public CView
 {
 protected: // 仅从序列化创建
@@ -23,6 +24,9 @@ private:
 	std::vector<Eigen::RowVector4d> Points;
 	std::vector<CPoint> Points2D;
 	int Scale = 100; //放大比例
+	int TranslationStep = 10; //一次平移移动10个像素
+	double Zoomin = 1.1; //一次放大为1.1倍
+	double Zoomout = 0.9; //一次缩小为0.9倍
 	int ProjectionType = 0; //0代表平行投影，1代表透视投影
 	int r = 0; //颜色
 	int g = 0;
@@ -58,7 +62,12 @@ public:
 	afx_msg void OnPingxing();
 	afx_msg void OnToushi();
 private:
-	void translation(Eigen::RowVector4d * Point, int dx, int dy, int dz);
+	void translation(Eigen::RowVector4d & Point, int dx, int dy, int dz);
+	void rotateX(Eigen::RowVector4d & Point, double theta);
+	void rotateY(Eigen::RowVector4d & Point, double theta);
+	void rotateZ(Eigen::RowVector4d & Point, double theta);
+	void scaleTransformation(Eigen::RowVector4d & Point, double rate);
+	double RotateDegree = 0.0174533; //15度的弧度
 public:
 	void DDALine(CDC* pDC, int x1, int y1, int x2, int y2, COLORREF color);
 private:

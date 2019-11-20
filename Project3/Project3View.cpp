@@ -109,7 +109,8 @@ void CProject3View::OnDraw(CDC* pDC)
 		}
 		else if (ProjectionType == 1) {
 			for (int i = 0; i < 8; i++) {
-				Points2D[i] = GetPerspectiveProjectionPoint(Points[i]);
+				Points2D[i].x = Points[i][0];
+				Points2D[i].y = Points[i][1];
 			}
 		}
 		DrawEdges(pDC);
@@ -132,32 +133,37 @@ CPoint CProject3View::GetParallelProjectionPoint(Eigen::RowVector4d Point)
 	return result;
 }
 
-CPoint CProject3View::GetPerspectiveProjectionPoint(Eigen::RowVector4d Point)
-{
-	CPoint result;
-	result.x = (int)ProjectionCenter[0];
-	result.y = (int)ProjectionCenter[1];
-	return result;
+CPoint CProject3View::GetPerspectiveProjectionPoint(Eigen::RowVector4d Point){
+	//方法未调用，已合并入OnDraw方法
+	return CPoint();
 }
 
 void CProject3View::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
-	if (nChar == VK_LEFT) {
+	if (nChar == VK_RIGHT) {
 		for (int i = 0; i< 8 ; i++)
-			translation(&Points[i], 1, 0, 0);
+			translation(Points[i], TranslationStep, 0, 0);
+		this->Invalidate(); //清屏
+		this->UpdateWindow();
 	}
-	else if (nChar == VK_RIGHT) {
+	else if (nChar == VK_LEFT) {
 		for (int i = 0; i < 8; i++)
-			translation(&Points[i], -1, 0, 0);
-	}
-	else if (nChar == VK_DOWN) {
-		for (int i = 0; i < 8; i++)
-			translation(&Points[i], 0, -1, 0);
+			translation(Points[i], -TranslationStep, 0, 0);
+		this->Invalidate(); //清屏
+		this->UpdateWindow();
 	}
 	else if (nChar == VK_UP) {
+		for (int i = 0; i < 8; i++)
+			translation(Points[i], 0, -TranslationStep, 0);
+		this->Invalidate(); //清屏
+		this->UpdateWindow();
+	}
+	else if (nChar == VK_DOWN) {
 		for(int i = 0; i < 8; i++)
-			translation(&Points[i], 0, 1, 0);
+			translation(Points[i], 0, TranslationStep, 0);
+		this->Invalidate(); //清屏
+		this->UpdateWindow();
 	}
 	CView::OnKeyDown(nChar, nRepCnt, nFlags);
 }
@@ -166,6 +172,8 @@ void CProject3View::OnPingxing() //斜二测投影
 {
 	ProjectionType = 0;
 	NeedDraw = true;
+	this->Invalidate(); //清屏
+	this->UpdateWindow();
 }
 
 void CProject3View::OnToushi() 
@@ -179,6 +187,8 @@ void CProject3View::OnToushi()
 		ProjectionCenter << dia.x, dia.y, dia.z;
 	}
 	NeedDraw = true;
+	this->Invalidate(); //清屏
+	this->UpdateWindow();
 }
 
 
@@ -218,7 +228,64 @@ void CProject3View::DrawEdges(CDC* pDC) 	//12条边为：AB BC CD DA EF FG GH HE
 
 void CProject3View::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
-	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	if (nChar == 'z') {
+		for (int i = 0; i < 8; i++) {
+			rotateZ(Points[i], RotateDegree);
+		}
+		this->Invalidate(); //清屏
+		this->UpdateWindow();
+
+	}
+	else if (nChar == 'x') {
+		for (int i = 0; i < 8; i++) {
+			rotateX(Points[i], RotateDegree);
+		}
+		this->Invalidate(); //清屏
+		this->UpdateWindow();
+	}
+	else if (nChar == 'c') {
+		for (int i = 0; i < 8; i++) {
+			rotateY(Points[i], RotateDegree);
+		}
+		this->Invalidate(); //清屏
+		this->UpdateWindow();
+	}
+	else if (nChar == 'a') {
+		for (int i = 0; i < 8; i++) {
+			rotateZ(Points[i], -RotateDegree);
+		}
+		this->Invalidate(); //清屏
+		this->UpdateWindow();
+
+	}
+	else if (nChar == 's') {
+		for (int i = 0; i < 8; i++) {
+			rotateX(Points[i], -RotateDegree);
+		}
+		this->Invalidate(); //清屏
+		this->UpdateWindow();
+	}
+	else if (nChar == 'd') {
+		for (int i = 0; i < 8; i++) {
+			rotateY(Points[i], -RotateDegree);
+		}
+		this->Invalidate(); //清屏
+		this->UpdateWindow();
+	}
+	else if (nChar == 'i') {
+		for (int i = 0; i < 8; i++) {
+			scaleTransformation(Points[i], Zoomin);
+		}
+		this->Invalidate(); //清屏
+		this->UpdateWindow();
+	}
+	else if (nChar == 'k') {
+		for (int i = 0; i < 8; i++) {
+			scaleTransformation(Points[i], Zoomout);
+		}
+		this->Invalidate(); //清屏
+		this->UpdateWindow();
+	}
 
 	CView::OnChar(nChar, nRepCnt, nFlags);
 }
@@ -228,14 +295,54 @@ void CProject3View::OnIddToushitouying()
 	
 }
 
-void CProject3View::translation(Eigen::RowVector4d * Point, int dx, int dy, int dz) //平移
+void CProject3View::translation(Eigen::RowVector4d & Point, int dx, int dy, int dz) //平移
 {
 	Eigen::Matrix4d op;
 	op << 1, 0, 0, 0,
 		0, 1, 0, 0,
 		0, 0, 1, 0,
 		dx, dy, dz, 1;
-	*Point = *Point * op;
+	Point = Point * op;
+	NeedDraw = true;
+}
+
+void CProject3View::rotateX(Eigen::RowVector4d & Point, double theta) {
+	Eigen::Matrix4d op;
+	op << 1, 0, 0, 0,
+		0, cos(theta), sin(theta), 0,
+		0, -sin(theta), cos(theta), 0,
+		0, 0, 0, 1;
+	Point = Point * op;
+	NeedDraw = true;
+}
+
+void CProject3View::rotateY(Eigen::RowVector4d & Point, double theta) {
+	Eigen::Matrix4d op;
+	op << cos(theta), 0, -sin(theta), 0,
+		0, 1, 0, 0,
+		sin(theta), 0, -cos(theta), 0,
+		0, 0, 0, 1;
+	Point = Point * op;
+	NeedDraw = true;
+}
+
+void CProject3View::rotateZ(Eigen::RowVector4d & Point, double theta) {
+	Eigen::Matrix4d op;
+	op << cos(theta), sin(theta), 0, 0,
+		-sin(theta), cos(theta), 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1;
+	Point = Point * op;
+	NeedDraw = true;
+}
+
+void CProject3View::scaleTransformation(Eigen::RowVector4d & Point, double rate) {
+	Eigen::Matrix4d op;
+	op << rate, 0, 0, 0,
+		0, rate, 0, 0,
+		0, 0, rate, 0,
+		0, 0, 0, 1;
+	Point = Point * op;
 	NeedDraw = true;
 }
 
