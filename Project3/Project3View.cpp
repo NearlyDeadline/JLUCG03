@@ -1,7 +1,7 @@
 ﻿
 // Project3View.cpp: CProject3View 类的实现
 //
-
+#pragma pack(push, 16)
 #include "stdafx.h"
 // SHARED_HANDLERS 可以在实现预览、缩略图和搜索筛选器句柄的
 // ATL 项目中进行定义，并允许与该项目共享文档代码。
@@ -16,7 +16,7 @@
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
-
+#pragma pack(pop)
 
 // CProject3View
 
@@ -106,14 +106,39 @@ void CProject3View::OnDraw(CDC* pDC)
 			for (int i = 0; i < 8; i++) {
 				Points2D[i] = GetParallelProjectionPoint(Points[i]);
 			}
+			//12条边为：AB BC CD DA EF FG GH HE AE BF CG DH
+			this->DDALine(pDC, Points2D[0].x, Points2D[0].y, Points2D[1].x, Points2D[1].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[1].x, Points2D[1].y, Points2D[2].x, Points2D[2].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[2].x, Points2D[2].y, Points2D[3].x, Points2D[3].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[3].x, Points2D[3].y, Points2D[0].x, Points2D[0].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[4].x, Points2D[4].y, Points2D[5].x, Points2D[5].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[5].x, Points2D[5].y, Points2D[6].x, Points2D[6].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[6].x, Points2D[6].y, Points2D[7].x, Points2D[7].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[7].x, Points2D[7].y, Points2D[4].x, Points2D[4].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[0].x, Points2D[0].y, Points2D[4].x, Points2D[4].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[1].x, Points2D[1].y, Points2D[5].x, Points2D[5].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[2].x, Points2D[2].y, Points2D[6].x, Points2D[6].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[3].x, Points2D[3].y, Points2D[7].x, Points2D[7].y, RGB(r, g, b));
 		}
 		else if (ProjectionType == 1) {
 			for (int i = 0; i < 8; i++) {
-				Points2D[i].x = Points[i][0];
-				Points2D[i].y = Points[i][1];
+				Points2D[i] = GetPerspectiveProjectionPoint(Points[i]);
 			}
+			//12条边为：AB BC CD DA EF FG GH HE AE BF CG DH
+			this->DDALine(pDC, Points2D[0].x, Points2D[0].y, Points2D[1].x, Points2D[1].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[1].x, Points2D[1].y, Points2D[2].x, Points2D[2].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[2].x, Points2D[2].y, Points2D[3].x, Points2D[3].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[3].x, Points2D[3].y, Points2D[0].x, Points2D[0].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[4].x, Points2D[4].y, Points2D[5].x, Points2D[5].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[5].x, Points2D[5].y, Points2D[6].x, Points2D[6].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[6].x, Points2D[6].y, Points2D[7].x, Points2D[7].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[7].x, Points2D[7].y, Points2D[4].x, Points2D[4].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[0].x, Points2D[0].y, Points2D[6].x, Points2D[6].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[1].x, Points2D[1].y, Points2D[7].x, Points2D[7].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[2].x, Points2D[2].y, Points2D[4].x, Points2D[4].y, RGB(r, g, b));
+			this->DDALine(pDC, Points2D[3].x, Points2D[3].y, Points2D[5].x, Points2D[5].y, RGB(r, g, b));
 		}
-		DrawEdges(pDC);
+		//DrawEdges(pDC);
 		NeedDraw = false;
 
 	}
@@ -134,8 +159,16 @@ CPoint CProject3View::GetParallelProjectionPoint(Eigen::RowVector4d Point)
 }
 
 CPoint CProject3View::GetPerspectiveProjectionPoint(Eigen::RowVector4d Point){
-	//方法未调用，已合并入OnDraw方法
-	return CPoint();
+	Eigen::Matrix4d op;
+	op << 1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 1 / PerspectiveProjection,
+		0, 0, 0, 0;
+	Point = Point * op;
+	CPoint result;
+	result.x = Point[0] / (Point[2] / PerspectiveProjection);
+	result.y = Point[1] / (Point[2] / PerspectiveProjection);
+	return result;
 }
 
 void CProject3View::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
@@ -282,6 +315,20 @@ void CProject3View::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 	else if (nChar == 'k') {
 		for (int i = 0; i < 8; i++) {
 			scaleTransformation(Points[i], Zoomout);
+		}
+		this->Invalidate(); //清屏
+		this->UpdateWindow();
+	}
+	else if (nChar == 'h') {
+		for (int i = 0; i < 8; i++) {
+			translation(Points[i], 0, 0, -TranslationStep);
+		}
+		this->Invalidate(); //清屏
+		this->UpdateWindow();
+	}
+	else if (nChar == 'n') {
+		for (int i = 0; i < 8; i++) {
+			translation(Points[i], 0, 0, TranslationStep);
 		}
 		this->Invalidate(); //清屏
 		this->UpdateWindow();

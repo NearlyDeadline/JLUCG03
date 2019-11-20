@@ -28,6 +28,7 @@ private:
 	double Zoomin = 1.1; //一次放大为1.1倍
 	double Zoomout = 0.9; //一次缩小为0.9倍
 	int ProjectionType = 0; //0代表平行投影，1代表透视投影
+	int PerspectiveProjection = 120; //透视投影的d
 	int r = 0; //颜色
 	int g = 0;
 	int b = 0;
