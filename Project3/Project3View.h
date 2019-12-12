@@ -21,7 +21,7 @@ public:
 public:
 
 private:
-	std::vector<Eigen::RowVector4d> Points;
+	std::vector<Eigen::RowVector4d, Eigen::aligned_allocator<Eigen::RowVector4d>> Points;
 	std::vector<CPoint> Points2D;
 	int Scale = 100; //放大比例
 	int TranslationStep = 10; //一次平移移动10个像素
